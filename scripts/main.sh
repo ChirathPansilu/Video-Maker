@@ -22,6 +22,7 @@ IFS=$'\t\n'                 # REQUIRED TO SUPPORT SPACES IN FILE NAMES
 FILES=`find ../media/*.jpg`                         # USE ALL IMAGES UNDER THE media FOLDER
 python text_breaking.py                             # RUN THE PYTHON SCRIPT TO CREATE RELEVANT TEMPORALY TEXT FILES
 TEXT_FILES=`find ../media/*.txt | sort `	        # USE ALL TEXT FILES IN media FOLDER SORTED
+AUDIO_FILE=`find ../media/*.mp3`                    # USE THE AUDIO FILE IN media FOLDER
 
 ############################
 # DO NO MODIFY LINES BELOW
@@ -50,6 +51,7 @@ START_TIME=$SECONDS
 # 1. START COMMAND
 FULL_SCRIPT="ffmpeg -y "
 TEXT_SCRIPT="ffmpeg -y "
+AUDIO_SCRIPT="ffmpeg -y "
 
 # 2. ADD INPUTS
 for IMAGE in ${FILES[@]}; do
@@ -116,9 +118,16 @@ FULL_SCRIPT+="[test]format=yuv420p[video]\""
 
 
 # 9. END  
-FULL_SCRIPT+=" -map [video] -vsync 2 -async 1 -rc-lookahead 0 -g 0 -profile:v main -level 42 -c:v libx264 -r ${FPS} ../temp.mp4"
+FULL_SCRIPT+=" -map [video] -vsync 2 -async 1 -rc-lookahead 0 -g 0 -profile:v main -level 42 -c:v libx264 -r ${FPS} ../temp2.mp4"
 
 eval ${FULL_SCRIPT}
+
+
+#ADD AUDIO
+AUDIO_SCRIPT+=" -i ../temp2.mp4 -i ${AUDIO_FILE} -map 0:v -map 1:a -c copy -shortest ../temp.mp4"
+
+eval ${AUDIO_SCRIPT}
+
 
 # 10.ADD TEXT
 
@@ -151,7 +160,7 @@ do
     TEXT_SCRIPT+="[out${c}][fg$((c+1))]overlay[out$((c+1))];"
 done
 
-TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtest_git2.mp4"
+TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtestaudio.mp4"
 
 #-------------------------------
 
@@ -160,6 +169,7 @@ TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtest_git2.mp4"
 eval ${TEXT_SCRIPT}
 
 eval $"rm ../temp.mp4"
+eval $"rm ../temp2.mp4"
 rm ${TEXT_FILES[@]}
 
 
