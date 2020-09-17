@@ -20,6 +20,8 @@ IFS=$'\t\n'                 # REQUIRED TO SUPPORT SPACES IN FILE NAMES
 # FILES=`find ../media/*.jpg | sort -r`             # USE ALL IMAGES UNDER THE media FOLDER SORTED
 # FILES=('../media/1.jpg' '../media/2.jpg')         # USE ONLY THESE IMAGE FILES
 FILES=`find ../media/*.jpg`                         # USE ALL IMAGES UNDER THE media FOLDER
+python text_breaking.py                             # RUN THE PYTHON SCRIPT TO CREATE RELEVANT TEMPORALY TEXT FILES
+TEXT_FILES=`find ../media/*.txt | sort `	        # USE ALL TEXT FILES IN media FOLDER SORTED
 
 ############################
 # DO NO MODIFY LINES BELOW
@@ -119,15 +121,46 @@ FULL_SCRIPT+=" -map [video] -vsync 2 -async 1 -rc-lookahead 0 -g 0 -profile:v ma
 eval ${FULL_SCRIPT}
 
 # 10.ADD TEXT
-TEXT_SCRIPT+="-i ../temp.mp4 -filter_complex \"drawtext=text=
-The most painful goodbyes are the ones $'\n'
-that were never explained or expected:fontsize=100:fontfile=HelloDaisy.ttf:fontcolor=red:x=(w-tw)/2:y=(h-th)/2:enable='between(t,5,10)',fade=t=in:start_time=5:d=1:alpha=1,fade=t=out:start_time=9.0:d=1:alpha=1[fg1];[0]drawtext=text=
-The eyes are useless when the mind is blind:fontsize=100:fontfile=HelloDaisy.ttf:fontcolor=red:x=(w-tw)/2:y=(h-th)/2:enable='between(t,12,15)',fade=t=in:start_time=12:d=1:alpha=1,fade=t=out:start_time=14:d=1:alpha=1[fg2];[0][fg1]overlay[out];[out][fg2]overlay\" -c:a copy ../transition_fade_in_one_mod_text_git2.mp4"
+
+#-------------------------------
+TEXT_SCRIPT+="-i ../temp.mp4 -filter_complex \""
+
+echo -e "\nSCRIPT FOR READING A FILE LINE BY LINE\n"
+
+text_end_time=1		     #FIRST TEXT STARTING TIME-2
+duration=4               #DURATION OF A SINGLE TEXT
+text_interval=2          #INTERVAL BETWEEN 2 DIFFERENT TEXTS
+
+n=1
+
+# 2. ADD INPUTS
+for TEXT in ${TEXT_FILES[@]}; do
+	text_start_time=$(($text_end_time+$text_interval))
+	text_end_time=$(($text_start_time+$duration))
+
+	TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=90:fontfile=HelloDaisy.ttf:fontcolor=red:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(($text_end_time-1)):d=1:alpha=1[fg$n];"
+	n=$((n+1))
+
+done
+
+
+TEXT_SCRIPT+="[0][fg1]overlay[out1];"
+
+for (( c=1; c<$((n-2)); c++ ))
+do
+    TEXT_SCRIPT+="[out${c}][fg$((c+1))]overlay[out$((c+1))];"
+done
+
+TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtest_git2.mp4"
+
+#-------------------------------
+
 
 
 eval ${TEXT_SCRIPT}
 
 eval $"rm ../temp.mp4"
+rm ${TEXT_FILES[@]}
 
 
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
