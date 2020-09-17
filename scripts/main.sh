@@ -37,6 +37,11 @@ if [[ ${IMAGE_COUNT} -lt 2 ]]; then
     exit 1;
 fi
 
+#CALCULATE IMAGE_DURATION TO ADJUST TO THE WHOLE SONG
+SONG_DURATION=$(ffprobe -i ${AUDIO_FILE} -show_entries format=duration -v quiet -of csv="p=0")
+IMAGE_DURATION=$((((${SONG_DURATION%.*}+$TRANSITION_DURATION)/$IMAGE_COUNT)-$TRANSITION_DURATION))
+
+
 # INTERNAL VARIABLES
 TRANSITION_FRAME_COUNT=$(( TRANSITION_DURATION*FPS ))
 IMAGE_FRAME_COUNT=$(( IMAGE_DURATION*FPS ))
@@ -136,9 +141,10 @@ TEXT_SCRIPT+="-i ../temp.mp4 -filter_complex \""
 
 echo -e "\nSCRIPT FOR READING A FILE LINE BY LINE\n"
 
-text_end_time=1		     #FIRST TEXT STARTING TIME-2
-duration=4               #DURATION OF A SINGLE TEXT
-text_interval=2          #INTERVAL BETWEEN 2 DIFFERENT TEXTS
+text_end_time=1		 #FIRST TEXT STARTING TIME-text_interval
+duration=8               #DURATION OF A SINGLE TEXT
+text_interval=1          #INTERVAL BETWEEN 2 DIFFERENT TEXTS
+
 
 n=1
 
@@ -147,7 +153,7 @@ for TEXT in ${TEXT_FILES[@]}; do
 	text_start_time=$(($text_end_time+$text_interval))
 	text_end_time=$(($text_start_time+$duration))
 
-	TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=90:fontfile=HelloDaisy.ttf:fontcolor=red:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(($text_end_time-1)):d=1:alpha=1[fg$n];"
+	TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=50:fontfile=RoughOTF.otf:fontcolor=white:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(($text_end_time-1)):d=1:alpha=1[fg$n];"
 	n=$((n+1))
 
 done
@@ -160,7 +166,7 @@ do
     TEXT_SCRIPT+="[out${c}][fg$((c+1))]overlay[out$((c+1))];"
 done
 
-TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtestaudio.mp4"
+TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtestaudiotimeadjusted_git4.mp4"
 
 #-------------------------------
 
