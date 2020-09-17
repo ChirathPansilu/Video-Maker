@@ -21,7 +21,7 @@ IFS=$'\t\n'                 # REQUIRED TO SUPPORT SPACES IN FILE NAMES
 # FILES=('../media/1.jpg' '../media/2.jpg')         # USE ONLY THESE IMAGE FILES
 FILES=`find ../media/*.jpg`                         # USE ALL IMAGES UNDER THE media FOLDER
 python text_breaking.py                             # RUN THE PYTHON SCRIPT TO CREATE RELEVANT TEMPORALY TEXT FILES
-TEXT_FILES=`find ../media/*.txt | sort `	        # USE ALL TEXT FILES IN media FOLDER SORTED
+TEXT_FILES=`find ../media/*.txt | sort `            # USE ALL TEXT FILES IN media FOLDER SORTED
 AUDIO_FILE=`find ../media/*.mp3`                    # USE THE AUDIO FILE IN media FOLDER
 
 ############################
@@ -141,20 +141,26 @@ TEXT_SCRIPT+="-i ../temp.mp4 -filter_complex \""
 
 echo -e "\nSCRIPT FOR READING A FILE LINE BY LINE\n"
 
-text_end_time=1		 #FIRST TEXT STARTING TIME-text_interval
-duration=8               #DURATION OF A SINGLE TEXT
+text_end_time=1      #FIRST TEXT STARTING TIME-text_interval
+TEXT_DURATION=8               #DURATION OF A SINGLE TEXT
 text_interval=1          #INTERVAL BETWEEN 2 DIFFERENT TEXTS
+
+# CALCULATE LINES MANUALLY
+let LINE_COUNT=0
+for LINE in ${TEXT_FILES[@]}; do (( LINE_COUNT+=1 )); done
+
+TEXT_DURATION=$((((${SONG_DURATION%.*}+$text_end_time)/$LINE_COUNT)-$text_interval))
 
 
 n=1
 
 # 2. ADD INPUTS
 for TEXT in ${TEXT_FILES[@]}; do
-	text_start_time=$(($text_end_time+$text_interval))
-	text_end_time=$(($text_start_time+$duration))
+    text_start_time=$(($text_end_time+$text_interval))
+    text_end_time=$(($text_start_time+$TEXT_DURATION))
 
-	TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=50:fontfile=RoughOTF.otf:fontcolor=white:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(($text_end_time-1)):d=1:alpha=1[fg$n];"
-	n=$((n+1))
+    TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=50:fontfile=RoughOTF.otf:fontcolor=white:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(($text_end_time-1)):d=1:alpha=1[fg$n];"
+    n=$((n+1))
 
 done
 
@@ -166,7 +172,7 @@ do
     TEXT_SCRIPT+="[out${c}][fg$((c+1))]overlay[out$((c+1))];"
 done
 
-TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtestaudiotimeadjusted_git4.mp4"
+TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtestaudiotimeadjusted_git5.mp4"
 
 #-------------------------------
 
