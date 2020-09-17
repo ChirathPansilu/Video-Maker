@@ -47,6 +47,7 @@ START_TIME=$SECONDS
 
 # 1. START COMMAND
 FULL_SCRIPT="ffmpeg -y "
+TEXT_SCRIPT="ffmpeg -y "
 
 # 2. ADD INPUTS
 for IMAGE in ${FILES[@]}; do
@@ -105,17 +106,36 @@ do
 done
 
 # 8. END CONCAT
-FULL_SCRIPT+="[stream${IMAGE_COUNT}overlaid]concat=n=$((2*IMAGE_COUNT-1)):v=1:a=0,format=yuv420p[video]\""
+FULL_SCRIPT+="[stream${IMAGE_COUNT}overlaid]concat=n=$((2*IMAGE_COUNT-1)):v=1:a=0[test];"
+
+
+#new
+FULL_SCRIPT+="[test]format=yuv420p[video]\""
+
 
 # 9. END  
-FULL_SCRIPT+=" -map [video] -vsync 2 -async 1 -rc-lookahead 0 -g 0 -profile:v main -level 42 -c:v libx264 -r ${FPS} ../transition_fade_in_one_git1.mp4"
+FULL_SCRIPT+=" -map [video] -vsync 2 -async 1 -rc-lookahead 0 -g 0 -profile:v main -level 42 -c:v libx264 -r ${FPS} ../temp.mp4"
 
 eval ${FULL_SCRIPT}
+
+# 10.ADD TEXT
+TEXT_SCRIPT+="-i ../temp.mp4 -filter_complex \"drawtext=text=
+The most painful goodbyes are the ones $'\n'
+that were never explained or expected:fontsize=100:fontfile=HelloDaisy.ttf:fontcolor=red:x=(w-tw)/2:y=(h-th)/2:enable='between(t,5,10)',fade=t=in:start_time=5:d=1:alpha=1,fade=t=out:start_time=9.0:d=1:alpha=1[fg1];[0]drawtext=text=
+The eyes are useless when the mind is blind:fontsize=100:fontfile=HelloDaisy.ttf:fontcolor=red:x=(w-tw)/2:y=(h-th)/2:enable='between(t,12,15)',fade=t=in:start_time=12:d=1:alpha=1,fade=t=out:start_time=14:d=1:alpha=1[fg2];[0][fg1]overlay[out];[out][fg2]overlay\" -c:a copy ../transition_fade_in_one_mod_text_git2.mp4"
+
+
+eval ${TEXT_SCRIPT}
+
+eval $"rm ../temp.mp4"
+
 
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
 
 echo -e '\nSlideshow created in '$ELAPSED_TIME' seconds\n'
 
 echo -e "\n $FULL_SCRIPT \n"
+
+echo -e "\n $TEXT_SCRIPT \n"
 
 unset $IFS
