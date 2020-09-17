@@ -20,8 +20,8 @@ IFS=$'\t\n'                 # REQUIRED TO SUPPORT SPACES IN FILE NAMES
 # FILES=`find ../media/*.jpg | sort -r`             # USE ALL IMAGES UNDER THE media FOLDER SORTED
 # FILES=('../media/1.jpg' '../media/2.jpg')         # USE ONLY THESE IMAGE FILES
 FILES=`find ../media/*.jpg`                         # USE ALL IMAGES UNDER THE media FOLDER
-python text_breaking.py                             # RUN THE PYTHON SCRIPT TO CREATE RELEVANT TEMPORALY TEXT FILES
-TEXT_FILES=`find ../media/*.txt | sort `            # USE ALL TEXT FILES IN media FOLDER SORTED
+python caption_centered.py                          # RUN THE PYTHON SCRIPT TO CREATE RELEVANT TEMPORALY TEXT FILES
+TEXT_FILES=`find ../media/lyrics/*.txt | sort `	    # USE ALL TEXT FILES IN media FOLDER SORTED
 AUDIO_FILE=`find ../media/*.mp3`                    # USE THE AUDIO FILE IN media FOLDER
 
 ############################
@@ -141,7 +141,7 @@ TEXT_SCRIPT+="-i ../temp.mp4 -filter_complex \""
 
 echo -e "\nSCRIPT FOR READING A FILE LINE BY LINE\n"
 
-text_end_time=1      #FIRST TEXT STARTING TIME-text_interval
+text_end_time=1		 #FIRST TEXT STARTING TIME-text_interval
 TEXT_DURATION=8               #DURATION OF A SINGLE TEXT
 text_interval=1          #INTERVAL BETWEEN 2 DIFFERENT TEXTS
 
@@ -155,12 +155,26 @@ TEXT_DURATION=$((((${SONG_DURATION%.*}+$text_end_time)/$LINE_COUNT)-$text_interv
 n=1
 
 # 2. ADD INPUTS
-for TEXT in ${TEXT_FILES[@]}; do
-    text_start_time=$(($text_end_time+$text_interval))
-    text_end_time=$(($text_start_time+$TEXT_DURATION))
+#for TEXT in ${TEXT_FILES[@]}; do
+#	text_start_time=$(($text_end_time+$text_interval))
+#	text_end_time=$(($text_start_time+$TEXT_DURATION))
 
-    TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=50:fontfile=RoughOTF.otf:fontcolor=white:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(($text_end_time-1)):d=1:alpha=1[fg$n];"
-    n=$((n+1))
+#	TEXT_SCRIPT+="[0]drawtext=textfile='${TEXT}':fontsize=50:fontfile=RoughOTF.otf:fontcolor=white:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$(($text_start_time-0.2)):d=0.2:alpha=1,fade=t=out:start_time=$(($text_end_time-0.2)):d=0.2:alpha=1[fg$n];"
+#	n=$((n+1))
+
+#done
+
+subtitle_offset=0
+
+for (( c=100; c<$(($LINE_COUNT+100)); c++ ))
+do
+	text_start_time_n_adjust=$(<../media/lyrics/timing/text_${c}_1.txt)
+	text_end_time_n_adjust=$(<../media/lyrics/timing/text_${c}_2.txt)
+	text_start_time=$(echo $text_start_time_n_adjust-$subtitle_offset | bc)
+	text_end_time=$(echo $text_end_time_n_adjust-$subtitle_offset | bc)
+
+	TEXT_SCRIPT+="[0]drawtext=textfile=../media/lyrics/text_${c}.txt:fontsize=50:fontfile=RoughOTF.otf:fontcolor=white:x=(w-tw)/2:y=(h-th)/2:enable='between(t,$text_start_time,$text_end_time)',fade=t=in:start_time=$text_start_time:d=1:alpha=1,fade=t=out:start_time=$(echo $text_end_time-0.2 | bc):d=0.2:alpha=1[fg$n];"
+	n=$((n+1))
 
 done
 
@@ -172,7 +186,7 @@ do
     TEXT_SCRIPT+="[out${c}][fg$((c+1))]overlay[out$((c+1))];"
 done
 
-TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../newtestaudiotimeadjusted_git5.mp4"
+TEXT_SCRIPT+="[out$((n-2))][fg$((n-1))]overlay\" -c:a copy ../lyrics_test1.mp4"
 
 #-------------------------------
 
@@ -182,7 +196,7 @@ eval ${TEXT_SCRIPT}
 
 eval $"rm ../temp.mp4"
 eval $"rm ../temp2.mp4"
-rm ${TEXT_FILES[@]}
+#rm ${TEXT_FILES[@]}
 
 
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
